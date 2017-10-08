@@ -73,4 +73,3 @@ class MySwitch(app_manager.RyuApp):
             actions = [ofp_parser.OFPActionOutput(out_port)]
             print in_port, out_port
             self.add_flow(datapath, 1, match, actions)
-                
