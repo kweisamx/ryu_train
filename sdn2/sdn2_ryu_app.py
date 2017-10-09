@@ -19,18 +19,6 @@ class MySwitch(app_manager.RyuApp):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        # install table-miss flow Entry
-        #
-        # We specify NO BUFFER to max_len of the output action due to
-        # OVS bug. At this moment, if we specify a lesser number, e.g.,
-        # 128, OVS will send Packet-In with invalid buffer_id and
-        # truncated packet data. In that case, we cannot output packets
-        # correctly.
-
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                         ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0,match,actions)
         print("send request")
         self.send_port_stats_request(datapath)# send the request
 
@@ -54,13 +42,11 @@ class MySwitch(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def port_stats_reply_handler(self, ev):
-        msg = ev.msg
-        datapath = msg.datapath
+        datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         ofp_parser = datapath.ofproto_parser
         ports = []
-        msg = ev.msg
-        for stat in msg.body:
+        for stat in ev.msg.body:
             if stat.port_no <=ofproto.OFPP_MAX: 
                 ports.append(stat.port_no)
         print ports
