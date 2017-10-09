@@ -61,7 +61,7 @@ class MySwitch(app_manager.RyuApp):
         ports = []
         msg = ev.msg
         for stat in msg.body:
-            if stat.port_no <=1000: 
+            if stat.port_no <=ofproto.OFPP_MAX: 
                 ports.append(stat.port_no)
         print ports
         for no in ports:
