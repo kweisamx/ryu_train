@@ -5,7 +5,7 @@ from mininet.cli import CLI
 from optparse import OptionParser
 def SetParse():
     parser = OptionParser()
-    parser.add_option("-n","--number",type="int",dest="switch_num",help="write the switch number")
+    parser.add_option("-n","--number",type="int",dest="switch_num",help="write the switch number",default=1 )
     return parser.parse_args()
 def MininetTopo(switch_num):
     net = Mininet()

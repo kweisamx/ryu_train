@@ -3,7 +3,7 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.controller.handler import set_ev_cls
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
-
+from ryu.lib.packet import ether_types
 
 
 class MySwitch(app_manager.RyuApp):
@@ -19,8 +19,21 @@ class MySwitch(app_manager.RyuApp):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        print("send request")
+
+        #set if packet is lldp, send to controller
+        actions = [parser.OFPActionOutput(port=ofproto.OFPP_CONTROLLER,
+                                          max_len=ofproto.OFPCML_NO_BUFFER)]
+        inst = [parser.OFPInstructionActions(type_=ofproto.OFPIT_APPLY_ACTIONS,actions=actions)]
+        match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_LLDP)
+        
+        mod = parser.OFPFlowMod(datapath=datapath,
+                                priority=1,
+                                match=match,
+                                instructions=inst)
+        datapath.send_msg(mod)
+
         self.send_port_stats_request(datapath)# send the request
+
 
     def add_flow(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
