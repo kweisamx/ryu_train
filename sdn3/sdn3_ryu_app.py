@@ -3,7 +3,7 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.controller.handler import set_ev_cls
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
-from ryu.lib.packet import ether_types
+from ryu.lib.packet import ether_types,lldp,packet,ethernet
 
 
 class MySwitch(app_manager.RyuApp):
@@ -32,7 +32,7 @@ class MySwitch(app_manager.RyuApp):
                                 instructions=inst)
         datapath.send_msg(mod)
 
-        self.send_port_stats_request(datapath)# send the request
+        self.send_port_desc_stats_request(datapath)# send the request
 
 
     def add_flow(self, datapath, priority, match, actions):
@@ -45,30 +45,57 @@ class MySwitch(app_manager.RyuApp):
         datapath.send_msg(mod)
 
 
-    def send_port_stats_request(self, datapath):
+    def send_port_desc_stats_request(self, datapath):
         ofproto = datapath.ofproto
         ofp_parser = datapath.ofproto_parser
     
-        req = ofp_parser.OFPPortStatsRequest(datapath, 0, ofproto.OFPP_ANY)
+        req = ofp_parser.OFPPortDescStatsRequest(datapath, 0)
         datapath.send_msg(req)
 
 
-    @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
-    def port_stats_reply_handler(self, ev):
+    # Send the lldp packet
+    def send_lldp_packet(self, datapath, port, hw_addr, ttl):
+        ofproto = datapath.ofproto
+        ofp_parser = datapath.ofproto_parser
+
+        pkt = packet.Packet()
+        pkt.add_protocol(ethernet.ethernet(ethertype=ether_types.ETH_TYPE_LLDP,src=hw_addr ,dst=lldp.LLDP_MAC_NEAREST_BRIDGE))
+
+        chassis_id = lldp.ChassisID(subtype=lldp.ChassisID.SUB_LOCALLY_ASSIGNED, chassis_id=str(datapath.id))
+        port_id = lldp.PortID(subtype=lldp.PortID.SUB_LOCALLY_ASSIGNED, port_id=str(port))
+        ttl = lldp.TTL(ttl=30)
+        end = lldp.End()
+        tlvs = (chassis_id,port_id,ttl,end)
+        pkt.add_protocol(lldp.lldp(tlvs))
+        pkt.serialize()
+        self.logger.info("packet-out %s" % (pkt,))
+        data = pkt.data
+        actions = [ofp_parser.OFPActionOutput(port=port)]
+        out = ofp_parser.OFPPacketOut(datapath=datapath,
+                                  buffer_id=ofproto.OFP_NO_BUFFER,
+                                  in_port=ofproto.OFPP_CONTROLLER,
+                                  actions=actions,
+                                  data=data)
+        datapath.send_msg(out)
+
+
+    @set_ev_cls(ofp_event.EventOFPPortDescStatsReply, MAIN_DISPATCHER)
+    def port_desc_stats_reply_handler(self, ev):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         ofp_parser = datapath.ofproto_parser
         ports = []
         for stat in ev.msg.body:
             if stat.port_no <=ofproto.OFPP_MAX: 
-                ports.append(stat.port_no)
-        print ports
+                ports.append({'port_no':stat.port_no,'hw_addr':stat.hw_addr})
         for no in ports:
-            in_port = no
+            in_port = no['port_no']
             match = ofp_parser.OFPMatch(in_port = in_port)
             for other_no in ports:
-                if other_no != in_port:
-                    out_port = other_no
+                if other_no['port_no'] != in_port:
+                    out_port = other_no['port_no']
+            self.send_lldp_packet(datapath,no['port_no'],no['hw_addr'],10)
             actions = [ofp_parser.OFPActionOutput(out_port)]
             print in_port, out_port
             self.add_flow(datapath, 1, match, actions)
+                          

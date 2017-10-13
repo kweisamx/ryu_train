@@ -32,7 +32,7 @@ def MininetTopo(switch_num):
             net.addLink("s"+str(link),"s"+str(link+1))
 
     info("Create controller ot switch. \n")
-    net.addController(controller=RemoteController,ip='140.113.207.84',port=6633)
+    net.addController(controller=RemoteController,ip='127.0.0.1',port=6633)
 
     info("Build and start network.\n")
     net.build()
