@@ -7,6 +7,7 @@ def SetParse():
     parser = OptionParser()
     parser.add_option("-n","--number",type="int",dest="switch_num",help="write the switch number",default=1 )
     return parser.parse_args()
+
 def MininetTopo(switch_num):
     net = Mininet()
     info("Create host nodes.\n")
@@ -20,7 +21,7 @@ def MininetTopo(switch_num):
     #s1 = net.addSwitch("s1",failMode = 'secure',protocols = 'OpenFlow13')
     for sw in range(1,switch_num+1):
         name = "s"+str(sw)
-        name = net.addSwitch(name,failMode = 'secure',protocols = 'OpenFlow13')
+        net.addSwitch(name,failMode = 'secure',protocols = 'OpenFlow13')
 
     info("Create Links. \n")
     for link in range(0,switch_num+1):
