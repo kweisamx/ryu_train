@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo mn -c && sudo python sdn3_mininet.py
+sudo mn -c && sudo python sdn3_mininet.py -n 3
