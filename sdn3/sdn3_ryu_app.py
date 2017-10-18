@@ -62,7 +62,7 @@ class MySwitch(app_manager.RyuApp):
 
         chassis_id = lldp.ChassisID(subtype=lldp.ChassisID.SUB_LOCALLY_ASSIGNED, chassis_id=str(datapath.id))
         port_id = lldp.PortID(subtype=lldp.PortID.SUB_LOCALLY_ASSIGNED, port_id=str(port))
-        ttl = lldp.TTL(ttl=30)
+        ttl = lldp.TTL(ttl=1)
         end = lldp.End()
         tlvs = (chassis_id,port_id,ttl,end)
         pkt.add_protocol(lldp.lldp(tlvs))
